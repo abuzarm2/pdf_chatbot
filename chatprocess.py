@@ -19,7 +19,7 @@ EMBEDDING_MODEL_NAME = os.environ['EMBEDDING_MODEL_NAME']
 if not AZURE_OPENAI_API_KEY:
     raise ValueError("AZURE_OPENAI_API_KEY environment variable is not set")
 
-loader = PyPDFLoader(".\data\Leave Policy.pdf")
+loader = PyPDFLoader(".\data\insurance.pdf")
 documents = loader.load_and_split()
 
 # Split the documents into chunks
@@ -79,8 +79,6 @@ def answer_question(query, vectordb):
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"}
     ]
 
-    print(type(msg))
-
     # Generate the response using the context
     response = client.chat.completions.create(
         model=os.getenv('CHAT_COMPLETIONS_DEPLOYMENT_NAME'),
@@ -93,6 +91,23 @@ def answer_question(query, vectordb):
     return response.choices[0].message.content
 
 
-query = "How many days of annual leave are provided?"
+# query = "How many days of annual leave are provided?"
+# response = answer_question(query, vectordb)
+# print(response)
+
+print('-----------------------------------------------------------------------')
+query = "What does \"Emergency Care\" mean according to the policy definitions?"
 response = answer_question(query, vectordb)
-print(response)
+print('question :'+query)
+print('response :'+response)
+print('-----------------------------------------------------------------------')
+query = "What is the premium for a 35-year-old individual under the Total Health Plan with a sum insured of 5 lakhs on an individual basis?"
+response = answer_question(query, vectordb)
+print('question :'+query)
+print('response :'+response)
+print('-----------------------------------------------------------------------')
+query = "What is the total premium for all family members if they are covered under a single policy?"
+response = answer_question(query, vectordb)
+print('question :'+query)
+print('response :'+response)
+print('-----------------------------------------------------------------------')

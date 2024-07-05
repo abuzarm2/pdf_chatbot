@@ -2,7 +2,7 @@ from openai import AzureOpenAI
 import os
 from langchain_community.document_loaders import PyPDFLoader
 from dotenv import load_dotenv
-
+from langchain_community.document_transformers.embeddings_redundant_filter import EmbeddingsRedundantFilter
 from langchain.vectorstores.chroma import Chroma
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import AzureOpenAIEmbeddings
@@ -15,6 +15,7 @@ AZURE_OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 OPENAI_API_VERSION = os.environ["OPENAI_API_VERSION"]
 AZURE_OPENAI_EMBED_DEPLOYEMENT = os.environ["AZURE_OPENAI_EMBED_DEPLOYEMENT"]
 EMBEDDING_MODEL_NAME = os.environ['EMBEDDING_MODEL_NAME']
+CHAT_COMPLETIONS_DEPLOYMENT_NAME = os.environ['CHAT_COMPLETIONS_DEPLOYMENT_NAME']
 
 if not AZURE_OPENAI_API_KEY:
     raise ValueError("AZURE_OPENAI_API_KEY environment variable is not set")
@@ -29,7 +30,6 @@ text_splitter = CharacterTextSplitter(
     chunk_overlap=128
 )
 texts = text_splitter.split_documents(documents)
-texts
 
 
 # Initialize OpenAI embeddings and Define the directory to persist the Chroma database
@@ -41,11 +41,20 @@ embeddings = AzureOpenAIEmbeddings(
 
 persist_directory = 'db'
 
+# Initialize the EmbeddingsRedundantFilter
+redundant_filter = EmbeddingsRedundantFilter(
+    embeddings=embeddings,
+    similarity_threshold=0.95
+)
+
+# Apply the filter to the documents
+filtered_texts = redundant_filter.transform_documents(documents=texts)
+
 
 # Create the Chroma vector store and persist the database
 try:
     vectordb = Chroma.from_documents(
-        documents=texts,
+        documents=filtered_texts,
         embedding=embeddings,
         persist_directory=persist_directory
     )
@@ -60,7 +69,7 @@ client = AzureOpenAI(
     azure_endpoint=AZURE_OPENAI_ENDPOINT,
     api_key=AZURE_OPENAI_API_KEY,
     api_version="2023-03-15-preview",
-    azure_deployment=os.getenv('CHAT_COMPLETIONS_DEPLOYMENT_NAME')
+    azure_deployment=CHAT_COMPLETIONS_DEPLOYMENT_NAME
 )
 
 vectordb = Chroma(persist_directory=persist_directory,
@@ -95,19 +104,19 @@ def answer_question(query, vectordb):
 # response = answer_question(query, vectordb)
 # print(response)
 
-print('-----------------------------------------------------------------------')
-query = "What does \"Emergency Care\" mean according to the policy definitions?"
-response = answer_question(query, vectordb)
-print('question :'+query)
-print('response :'+response)
-print('-----------------------------------------------------------------------')
-query = "What is the premium for a 35-year-old individual under the Total Health Plan with a sum insured of 5 lakhs on an individual basis?"
-response = answer_question(query, vectordb)
-print('question :'+query)
-print('response :'+response)
-print('-----------------------------------------------------------------------')
-query = "What is the total premium for all family members if they are covered under a single policy?"
-response = answer_question(query, vectordb)
-print('question :'+query)
-print('response :'+response)
-print('-----------------------------------------------------------------------')
+# print('-----------------------------------------------------------------------')
+# query = "What does \"Emergency Care\" mean according to the policy definitions?"
+# response = answer_question(query, vectordb)
+# print('question :'+query)
+# print('response :'+response)
+# print('-----------------------------------------------------------------------')
+# query = "What is the premium for a 35-year-old individual under the Total Health Plan with a sum insured of 5 lakhs on an individual basis?"
+# response = answer_question(query, vectordb)
+# print('question :'+query)
+# print('response :'+response)
+# print('-----------------------------------------------------------------------')
+# query = "What is the total premium for all family members if they are covered under a single policy?"
+# response = answer_question(query, vectordb)
+# print('question :'+query)
+# print('response :'+response)
+# print('-----------------------------------------------------------------------')

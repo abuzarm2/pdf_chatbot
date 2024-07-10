@@ -34,20 +34,25 @@ class DocumentProcess(Resource):
         # file = request.files['file']
         # file_path = os.path.join('.', 'uploaded_file.pdf')
         # file.save(file_path)
+
+        # check if file already exists
         file = request.files['file']
-        file_path = os.path.join('.', file.filename)
-        file.save(file_path)
+        file_path = os.path.join('data', file.filename)
+        if not os.path.exists(file_path):
+            file.save(file_path)
+        else:
+            return {'message': 'Document Already Processed!'}
+        print(file_path)
 
         try:
             # Read the PDF document, handle process document
             loader = PyPDFLoader(file_path)
             documents = loader.load_and_split()
 
-            # Extract the text from the PDF document
             text_splitter = CharacterTextSplitter(
                 separator='\n',
-                chunk_size=1024,
-                chunk_overlap=128
+                chunk_size=1000,
+                chunk_overlap=200
             )
             texts = text_splitter.split_documents(documents)
 
